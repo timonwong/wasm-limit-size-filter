@@ -17,7 +17,7 @@ Rust 语言写的7层 Envoy WASM Filter 示例。
 
 ## runtime-config.json
 
-```json
+```json5
 {
   "type": "envoy_proxy", // 固定为 envoy_proxy
   "abiVersions": [], // 留空, 表示 istio 1.10 或与 istio 1.10 兼容的版本

@@ -1,11 +1,11 @@
+use std::cell::RefCell;
 use std::collections::HashMap;
+use std::rc::Rc;
 
 use log::error;
 use log::info;
-use proxy_wasm::traits::*;
-use proxy_wasm::types::*;
-use std::cell::RefCell;
-use std::rc::Rc;
+use proxy_wasm::traits::{Context, HttpContext, RootContext};
+use proxy_wasm::types::{Action, ContextType, LogLevel};
 
 #[no_mangle]
 pub fn _start() {
@@ -18,6 +18,11 @@ pub fn _start() {
 #[derive(Debug)]
 struct AddHeaderRootContext {
     root_headers_map: Rc<RefCell<HashMap<String, String>>>,
+}
+
+#[derive(Debug)]
+struct AddHeader {
+    headers_map: Rc<RefCell<HashMap<String, String>>>,
 }
 
 impl AddHeaderRootContext {
@@ -34,12 +39,12 @@ impl RootContext for AddHeaderRootContext {
     fn on_configure(&mut self, _: usize) -> bool {
         let mut root_headers_map = self.root_headers_map.borrow_mut();
         if let Some(config_bytes) = self.get_configuration() {
-            let v: serde_json::Result<HashMap<String, String>> =
-                serde_json::from_slice(config_bytes.as_slice());
+            type Config = HashMap<String, String>;
+            let v = serde_json::from_slice::<Config>(config_bytes.as_slice());
             match v {
                 Ok(config) => {
-                    for (key, value) in config.iter() {
-                        root_headers_map.insert(key.to_owned(), String::from(value));
+                    for (key, value) in &config {
+                        root_headers_map.insert(key.to_owned(), value.to_owned());
                     }
 
                     info!("Got configuration: {:?}", root_headers_map);
@@ -64,21 +69,18 @@ impl RootContext for AddHeaderRootContext {
     }
 }
 
-#[derive(Debug)]
-struct AddHeader {
-    headers_map: Rc<RefCell<HashMap<String, String>>>,
-}
-
 impl Context for AddHeader {}
 
 impl HttpContext for AddHeader {
     fn on_http_response_headers(&mut self, _num_headers: usize) -> Action {
-        // 默认返回一个 WA-Demo: true 的头
+        // 默认设置两个 HTTP 返回头:
+        //  - WA-Demo: true
+        //  - X-Powered-By: add-header-ts
         self.set_http_response_header("WA-Demo", Some("true"));
-        self.set_http_response_header("X-Powered-By", Some("add-header-ts"));
+        self.set_http_response_header("X-Powered-By", Some("add-header-rs"));
 
-        // 自定义 Header
-        let headers_map = self.headers_map.borrow();
+        // 设置自定义的 HTTP 返回头
+        let headers_map = self.headers_map.borrow_mut();
         for (k, v) in headers_map.iter() {
             self.set_http_response_header(k, Some(v));
         }

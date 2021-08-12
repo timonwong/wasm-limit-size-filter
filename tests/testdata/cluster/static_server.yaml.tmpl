@@ -1,0 +1,19 @@
+- name: static_server
+  connect_timeout: 5s
+  type: STATIC
+  metadata:
+    filter_metadata:
+      istio:
+        services:
+        - host: static.default.svc.cluster.local
+          name: static
+          namespace: default
+  load_assignment:
+    cluster_name: static_server
+    endpoints:
+    - lb_endpoints:
+      - endpoint:
+          address:
+            socket_address:
+              address: 127.0.0.1
+              port_value: {{ .Ports.BackendPort }}
