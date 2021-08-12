@@ -27,7 +27,7 @@ func init() {
 }
 
 func TestAddHeader(t *testing.T) {
-	wasmFile, err := filepath.Abs("../extension.wasm")
+	wasmFile, err := filepath.Abs("../filter.wasm")
 	if err != nil {
 		panic(err)
 	}
