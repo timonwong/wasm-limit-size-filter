@@ -1,0 +1,32 @@
+ARG WASM_IMAGE
+ARG ENVOY_IMAGE=build-harbor.alauda.cn/asm/proxyv2:1.10.2-v3.6-98-89c1ba2b5dd400f04d8c5
+
+FROM $WASM_IMAGE as wasm
+
+FROM $ENVOY_IMAGE as envoy
+
+FROM golang:1.15 as test
+
+# 安装 bazelisk (只是为了让 istio.io/proxy/test 工作)
+ENV USE_BAZEL_VERSION="2.2.0" \
+    BAZELISK_BASE_URL="https://nexus-b.alauda.cn/repository/asm/bazel"
+RUN GO111MODULE=off go get github.com/bazelbuild/bazelisk && cp "$(which bazelisk)" /usr/local/bin/bazel
+
+WORKDIR /app
+
+COPY --from=envoy /usr/local/bin/envoy /usr/local/bin/envoy
+COPY --from=wasm filter.wasm ./extension.wasm
+
+COPY WORKSPACE go.mod go.sum ./
+COPY ./tests tests
+COPY ./vendor vendor
+
+# HACK: 保证每次变更都重新执行测试
+ARG GIT_COMMIT
+RUN GIT_COMMIT=$GIT_COMMIT \
+    ENVOY_PATH=/usr/local/bin/envoy \
+    go test -v ./tests/...
+
+# "Pseudo" final image, 只是为了镜像不要太大
+FROM scratch
+COPY --from=test /app/go.mod go.mod
