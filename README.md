@@ -12,8 +12,9 @@ Rust 语言写的7层 Envoy WASM Filter 示例。
 - src/lib.rs: 扩展具体实现部分
 - Cargo.lock: Rust cargo lock 文件，自动生成，忽略
 - Cargo.toml: Rust描述和依赖
-- Dockerfile
+- Dockerfile: WASM 构建镜像
 - runtime-config.json: 扩展元数据，包含本扩展的 ABI 兼容性、Envoy rootId 等信息
+- ci: CI 系统使用的 Dockerfile 和脚本, 参见[流水线配置](https://build.alauda.cn/console-devops/workspace/asm/pipelines/all/wasm-add-header-rs-demo)
 
 ## runtime-config.json
 
@@ -36,7 +37,7 @@ Rust 语言写的7层 Envoy WASM Filter 示例。
 
 ## Dockerfile
 
-`Dockerfile` 使用了多阶段构建，重点在以下部分，生成镜像：
+`Dockerfile` 使用了多阶段构建，将 rust 代码编译为 wasm 模块。重点在以下部分，生成镜像：
 
 1. 镜像的基础镜像需要是 `scratch`
 2. 镜像包含两个文件，一个是 `runtime-config.json`，另外一个是 `filter.wasm`
