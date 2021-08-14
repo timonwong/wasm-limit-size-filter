@@ -39,14 +39,13 @@ Rust 语言写的7层 Envoy WASM Filter 示例。
 
 `Dockerfile` 使用了多阶段构建，将 rust 代码编译为 wasm 模块。重点在以下部分，生成镜像：
 
-1. 镜像的基础镜像需要是 `scratch`
-2. 镜像包含两个文件，一个是 `runtime-config.json`，另外一个是 `filter.wasm`
+1. 镜像的基础镜像**必须**是 `scratch`
+2. 镜像包含两个文件，一个是 `runtime-config.json`，另外一个是 `filter.wasm`，放在同一个 Layer 里面（一个 `COPY`）
 
 ```Dockerfile
-
+## 必须为 scratch
+FROM scratch
 # 两个文件, filter.wasm 和 runtime-config.json
-## 将编译出来的 wasm 拷贝到 /filter.wasm
-COPY --from=build /app/target/wasm32-unknown-unknown/release/add_header_rs.wasm filter.wasm
-## 拷贝 runtime-config.json
-COPY runtime-config.json runtime-config.json
+## 拷贝 filter.wasm 和 runtime-config.json
+COPY filter.wasm runtime-config.json ./
 ```

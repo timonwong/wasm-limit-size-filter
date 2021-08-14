@@ -7,7 +7,7 @@ build:
 .PHONY: e2e-test
 e2e-test:
 	go mod download
-	go test -v ./tests/...
+	go test ./test/...
 
 .PHONY:
 clean:
