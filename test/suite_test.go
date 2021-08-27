@@ -8,23 +8,8 @@ import (
 	"time"
 
 	"istio.io/proxy/test/envoye2e/driver"
-	"istio.io/proxy/test/envoye2e/env"
 	"istio.io/proxy/testdata"
 )
-
-// Inventory is initialised at the bottom of the file. Port assignments will be
-// offset based on the index of the test in the inventory.
-var ExtensionE2ETests *env.TestInventory
-
-func init() {
-	ExtensionE2ETests = &env.TestInventory{
-		Tests: []string{
-			"TestAddHeader/NoConfig",
-			"TestAddHeader/WrongConfig",
-			"TestAddHeader/ExtraHeaders",
-		},
-	}
-}
 
 func TestAddHeader(t *testing.T) {
 	wasmFile, err := filepath.Abs("../filter.wasm")
@@ -42,8 +27,8 @@ func TestAddHeader(t *testing.T) {
 			responseHeaders: map[string]string{
 				"wa-demo":      "true",
 				"x-powered-by": "add-header-rs",
-				"x-header-1":   "-",
-				"x-header-2":   "-",
+				"x-header-1":   driver.None,
+				"x-header-2":   driver.None,
 			},
 		},
 		{
@@ -52,8 +37,8 @@ func TestAddHeader(t *testing.T) {
 			responseHeaders: map[string]string{
 				"wa-demo":      "true",
 				"x-powered-by": "add-header-rs",
-				"x-header-1":   "-",
-				"x-header-2":   "-",
+				"x-header-1":   driver.None,
+				"x-header-2":   driver.None,
 			},
 		},
 		{

@@ -10,11 +10,13 @@ COPY ./src src
 RUN rustup target add wasm32-unknown-unknown && \
     cargo build --target=wasm32-unknown-unknown --release
 
-# 最终镜像, 务必使用 scratch
-FROM scratch as final
+FROM scratch as medium
 
-# 两个文件, filter.wasm 和 runtime-config.json
 ## 将编译出来的 wasm 拷贝到 /filter.wasm
 COPY --from=build /app/target/wasm32-unknown-unknown/release/add_header_rs.wasm filter.wasm
-## 拷贝 runtime-config.json
 COPY runtime-config.json runtime-config.json
+
+# 最终镜像, 务必使用 scratch
+FROM scratch as final
+# 两个文件, filter.wasm 和 runtime-config.json
+COPY --from=medium filter.wasm runtime-config.json ./
