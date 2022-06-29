@@ -7,13 +7,12 @@ use log::info;
 use proxy_wasm::traits::{Context, HttpContext, RootContext};
 use proxy_wasm::types::{Action, ContextType, LogLevel};
 
-#[no_mangle]
-pub fn _start() {
+proxy_wasm::main! {{
     proxy_wasm::set_log_level(LogLevel::Trace);
     proxy_wasm::set_root_context(|_context_id| -> Box<dyn RootContext> {
         Box::new(AddHeaderRootContext::new())
     });
-}
+}}
 
 #[derive(Debug)]
 struct AddHeaderRootContext {
@@ -38,7 +37,7 @@ impl Context for AddHeaderRootContext {}
 impl RootContext for AddHeaderRootContext {
     fn on_configure(&mut self, _: usize) -> bool {
         let mut root_headers_map = self.root_headers_map.borrow_mut();
-        if let Some(config_bytes) = self.get_configuration() {
+        if let Some(config_bytes) = self.get_plugin_configuration() {
             type Config = HashMap<String, String>;
             let v = serde_json::from_slice::<Config>(config_bytes.as_slice());
             match v {
@@ -72,7 +71,7 @@ impl RootContext for AddHeaderRootContext {
 impl Context for AddHeader {}
 
 impl HttpContext for AddHeader {
-    fn on_http_response_headers(&mut self, _num_headers: usize) -> Action {
+    fn on_http_response_headers(&mut self, _num_headers: usize, _end_of_stream: bool) -> Action {
         // 默认设置两个 HTTP 返回头:
         //  - WA-Demo: true
         //  - X-Powered-By: add-header-ts
