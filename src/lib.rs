@@ -1,15 +1,14 @@
 use std::convert::TryFrom;
 use std::str::FromStr;
 
-use log::error;
-use log::info;
+use log::{debug, error, info};
 use proxy_wasm::traits::{Context, HttpContext, RootContext};
 use proxy_wasm::types::{Action, ContextType, LogLevel};
 
 mod config;
 
 proxy_wasm::main! {{
-    proxy_wasm::set_log_level(LogLevel::Trace);
+    proxy_wasm::set_log_level(LogLevel::Debug);
     proxy_wasm::set_root_context(|_context_id| -> Box<dyn RootContext> {
         Box::new(LimitSizeRootContext::new())
     });
@@ -18,13 +17,6 @@ proxy_wasm::main! {{
 #[derive(Debug)]
 struct LimitSizeRootContext {
     root_config: config::Config,
-}
-
-#[derive(Debug)]
-struct LimitSize {
-    config: config::Config,
-    is_ct: bool,
-    acc_size: usize,
 }
 
 impl LimitSizeRootContext {
@@ -58,8 +50,9 @@ impl RootContext for LimitSizeRootContext {
     fn create_http_context(&self, _context_id: u32) -> Option<Box<dyn HttpContext>> {
         Some(Box::new(LimitSize {
             config: self.root_config,
-            is_ct: false,
-            acc_size: 0,
+            acc_req_size: 0,
+            acc_resp_size: 0,
+            bailed_out: false,
         }))
     }
 
@@ -68,57 +61,122 @@ impl RootContext for LimitSizeRootContext {
     }
 }
 
+#[derive(Debug)]
+struct LimitSize {
+    config: config::Config,
+    acc_req_size: usize,
+    acc_resp_size: usize,
+    bailed_out: bool,
+}
+
 impl Context for LimitSize {}
 
 impl HttpContext for LimitSize {
     fn on_http_request_headers(&mut self, _num_headers: usize, _end_of_stream: bool) -> Action {
-        // 优先使用 Content-Length
-        match self.get_http_request_header("Content-Length") {
-            Some(cl) => {
-                let max_size: i64 = i64::try_from(self.max_request_size()).unwrap_or(i64::MAX);
-                match i64::from_str(cl.as_str()) {
-                    Ok(length) if length > max_size => {
-                        self.send_http_response(413, vec![], Some(b"Payload Too Large"));
-                        return Action::Pause;
-                    }
-                    _ => {}
-                }
-            }
-            _ => {}
-        }
+        debug!(
+            "on_http_request_headers, _num_headers={:?}, _end_of_stream={:?}",
+            _num_headers, _end_of_stream
+        );
 
-        match self.get_http_request_header("Transfer-Encoding") {
-            Some(te) if te == "chunked" => {
-                self.is_ct = true;
-            }
-            _ => {}
+        // 优先使用 Content-Length
+        if let Some(action) = self.limit_content_length(
+            self.max_request_size(),
+            Self::get_http_request_header,
+            Self::bail_request_payload_too_large,
+        ) {
+            return action;
         }
 
         Action::Continue
     }
 
     fn on_http_request_body(&mut self, body_size: usize, _end_of_stream: bool) -> Action {
-        if self.is_ct {
-            self.acc_size += body_size;
-            if self.acc_size > self.max_request_size() {
-                self.send_http_response(413, vec![], Some(b"Payload Too Large"));
-                return Action::Pause;
-            }
+        debug!(
+            "on_http_request_body, body_size={:?}, end_of_stream={:?}",
+            body_size, _end_of_stream
+        );
+
+        self.acc_req_size += body_size;
+        if self.acc_req_size > self.max_request_size() {
+            return self.bail_request_payload_too_large();
         }
 
         Action::Continue
     }
 
     fn on_http_response_headers(&mut self, _num_headers: usize, _end_of_stream: bool) -> Action {
+        debug!(
+            "on_http_response_headers: _num_headers={:?} _end_of_stream={:?}",
+            _num_headers, _end_of_stream
+        );
+
+        if self.bailed_out {
+            info!("on_http_response_headers:: bailed!");
+            return Action::Continue;
+        }
+
+        // 优先使用 Content-Length
+        if let Some(action) = self.limit_content_length(
+            self.max_response_size(),
+            Self::get_http_response_header,
+            Self::bail_response_payload_too_large,
+        ) {
+            return action;
+        }
+
         Action::Continue
     }
 
-    fn on_http_response_body(&mut self, _body_size: usize, _end_of_stream: bool) -> Action {
+    fn on_http_response_body(&mut self, body_size: usize, _end_of_stream: bool) -> Action {
+        debug!(
+            "on_http_response_body, body_size={:?}, end_of_stream={:?}",
+            body_size, _end_of_stream
+        );
+
+        if self.bailed_out {
+            info!("on_http_response_body:: bailed!");
+            return Action::Continue;
+        }
+
+        self.acc_resp_size += body_size;
+        if self.acc_resp_size > self.max_response_size() {
+            return self.bail_response_payload_too_large();
+        }
+
         Action::Continue
     }
 }
 
 impl LimitSize {
+    fn limit_content_length(
+        &mut self,
+        max_size: usize,
+        header_fn: fn(&Self, &str) -> Option<String>,
+        bail_fn: fn(&mut Self) -> Action,
+    ) -> Option<Action> {
+        let cl = header_fn(self, "Content-Length")?;
+        debug!("Got content length: {:?}", cl);
+        let length = i64::from_str(cl.as_str()).ok()?;
+        let max_size = i64::try_from(max_size).ok()?;
+        if length > max_size {
+            return Some(bail_fn(self));
+        }
+
+        None
+    }
+
+    fn bail_request_payload_too_large(&mut self) -> Action {
+        self.send_http_response(413, vec![], Some(b"Payload Too Large"));
+        self.bailed_out = true;
+        Action::Pause
+    }
+
+    fn bail_response_payload_too_large(&mut self) -> Action {
+        self.send_http_response(502, vec![], Some(b"Bad Gateway: Payload Too Large"));
+        self.bailed_out = true;
+        Action::Pause
+    }
+
     fn max_request_size(&self) -> usize {
         self.config.max_request_size
     }

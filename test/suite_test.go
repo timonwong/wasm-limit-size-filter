@@ -1,9 +1,9 @@
 package test
 
 import (
-	"io/ioutil"
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 	"time"
 
@@ -11,45 +11,56 @@ import (
 	"istio.io/proxy/testdata"
 )
 
-func TestAddHeader(t *testing.T) {
-	wasmFile, err := filepath.Abs("../filter.wasm")
-	if err != nil {
-		panic(err)
-	}
+var testDir string
+
+func init() {
+	_, currentFile, _, _ := runtime.Caller(0)
+	testDir = filepath.Dir(currentFile)
+}
+
+func TestLimitSize(t *testing.T) {
+	wasmFile := filepath.Join(testDir, "../filter.wasm")
 
 	tests := []struct {
-		name            string
-		wasmConfig      string
-		responseHeaders map[string]string
+		name           string
+		wasmConfig     string
+		requestBody    string
+		responseCode   int
+		requestChunked bool
 	}{
 		{
-			name: "NoConfig",
-			responseHeaders: map[string]string{
-				"wa-demo":      "true",
-				"x-powered-by": "add-header-rs",
-				"x-header-1":   driver.None,
-				"x-header-2":   driver.None,
-			},
+			name:         "WrongConfig",
+			wasmConfig:   `{"abc": 123d}`,
+			responseCode: 200,
 		},
 		{
-			name:       "WrongConfig",
-			wasmConfig: `{"abc": 123d}`,
-			responseHeaders: map[string]string{
-				"wa-demo":      "true",
-				"x-powered-by": "add-header-rs",
-				"x-header-1":   driver.None,
-				"x-header-2":   driver.None,
-			},
+			name:         "LimitRequest-1B-Fail",
+			wasmConfig:   `{"maxRequestSize": 1}`,
+			requestBody:  "hello",
+			responseCode: 413,
 		},
 		{
-			name:       "ExtraHeaders",
-			wasmConfig: `{"x-header-1":"header one","x-header-2":"header two"}`,
-			responseHeaders: map[string]string{
-				"wa-demo":      "true",
-				"x-powered-by": "add-header-rs",
-				"x-header-1":   "header one",
-				"x-header-2":   "header two",
-			},
+			name:           "LimitRequest-5B-CT-Fail",
+			wasmConfig:     `{"maxRequestSize": 5}`,
+			requestBody:    "hello hello hello hello hello hello",
+			responseCode:   413,
+			requestChunked: true,
+		},
+		{
+			name:         "LimitRequest-100B-Ok",
+			wasmConfig:   `{"maxRequestSize": 100}`,
+			requestBody:  "hello",
+			responseCode: 200,
+		},
+		{
+			name:         "LimitResponse-1B-Fail",
+			wasmConfig:   `{"maxResponseSize": 1}`,
+			responseCode: 502,
+		},
+		{
+			name:         "LimitResponse-100B-Ok",
+			wasmConfig:   `{"maxResponseSize": 100}`,
+			responseCode: 200,
 		},
 	}
 
@@ -78,14 +89,16 @@ func TestAddHeader(t *testing.T) {
 						DownloadVersion: os.Getenv("ISTIO_TEST_VERSION"),
 					},
 					&driver.Sleep{Duration: 1 * time.Second},
-					&driver.HTTPCall{
+					&HTTPCall{
 						// request
-						Method: "GET",
-						Path:   "/",
-						Port:   params.Ports.ServerPort,
+						Port:               params.Ports.ServerPort,
+						Method:             "POST",
+						Path:               "/",
+						RequestBody:        tt.requestBody,
+						RequestChunked:     tt.requestChunked,
+						RequestChunkedSize: 2,
 						// expect
-						ResponseCode:    200,
-						ResponseHeaders: tt.responseHeaders,
+						ResponseCode: tt.responseCode,
 					},
 				},
 			}
@@ -98,7 +111,11 @@ func TestAddHeader(t *testing.T) {
 }
 
 func loadTestData(testFileName string) string {
-	data, err := ioutil.ReadFile(testFileName)
+	if !filepath.IsAbs(testFileName) {
+		testFileName = filepath.Join(testDir, testFileName)
+	}
+
+	data, err := os.ReadFile(testFileName)
 	if err != nil {
 		panic(err)
 	}

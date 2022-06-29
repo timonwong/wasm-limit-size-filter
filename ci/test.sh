@@ -10,4 +10,4 @@ GO111MODULE=off go get github.com/bazelbuild/bazelisk && \
   cp "$(which bazelisk)" /usr/local/bin/bazel
 
 # 使用 ISTIO_TEST_VERSION 环境变量可以让测试自动下载 envoy
-ISTIO_TEST_VERSION=1.10.3 make e2e-test
+ISTIO_TEST_VERSION=1.12.5 make e2e-test

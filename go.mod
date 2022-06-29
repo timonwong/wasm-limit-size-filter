@@ -2,7 +2,7 @@ module gitlab-ce.alauda.cn/micro-service/wasm-limit-size-rs
 
 go 1.17
 
-require istio.io/proxy v0.0.0-20210729222211-889eab6e5c76
+require istio.io/proxy v0.0.0-20220628224822-16de933289eb
 
 require (
 	github.com/census-instrumentation/opencensus-proto v0.2.1 // indirect
@@ -12,7 +12,6 @@ require (
 	github.com/envoyproxy/go-control-plane v0.9.9-0.20210511190911-87d352569d55 // indirect
 	github.com/envoyproxy/protoc-gen-validate v0.1.0 // indirect
 	github.com/fsnotify/fsnotify v1.4.9 // indirect
-	github.com/ghodss/yaml v1.0.0 // indirect
 	github.com/golang/protobuf v1.4.3 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.1 // indirect
 	github.com/prometheus/client_model v0.2.0 // indirect
@@ -23,5 +22,6 @@ require (
 	google.golang.org/genproto v0.0.0-20200526211855-cb27e3aa2013 // indirect
 	google.golang.org/grpc v1.36.0 // indirect
 	google.golang.org/protobuf v1.25.0 // indirect
-	gopkg.in/yaml.v2 v2.2.8 // indirect
+	gopkg.in/yaml.v2 v2.4.0 // indirect
+	sigs.k8s.io/yaml v1.3.0 // indirect
 )
