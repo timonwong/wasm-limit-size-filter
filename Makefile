@@ -2,7 +2,7 @@
 build:
 	rustup target add wasm32-unknown-unknown && \
         cargo build --target=wasm32-unknown-unknown --release && \
-        cp target/wasm32-unknown-unknown/release/add_header_rs.wasm filter.wasm
+        cp target/wasm32-unknown-unknown/release/limit_size_rs.wasm filter.wasm
 
 .PHONY: e2e-test
 e2e-test:

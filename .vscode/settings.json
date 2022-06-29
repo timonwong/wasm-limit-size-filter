@@ -1,8 +1,0 @@
-{
-    "[rust]": {
-        "editor.formatOnSave": true,
-    },
-    "go.inferGopath": false,
-    "go.lintTool": "golangci-lint",
-    "go.formatTool": "gofmt",
-}

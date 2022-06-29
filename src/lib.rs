@@ -1,52 +1,50 @@
-use std::cell::RefCell;
-use std::collections::HashMap;
-use std::rc::Rc;
+use std::convert::TryFrom;
+use std::str::FromStr;
 
 use log::error;
 use log::info;
 use proxy_wasm::traits::{Context, HttpContext, RootContext};
 use proxy_wasm::types::{Action, ContextType, LogLevel};
 
+mod config;
+
 proxy_wasm::main! {{
     proxy_wasm::set_log_level(LogLevel::Trace);
     proxy_wasm::set_root_context(|_context_id| -> Box<dyn RootContext> {
-        Box::new(AddHeaderRootContext::new())
+        Box::new(LimitSizeRootContext::new())
     });
 }}
 
 #[derive(Debug)]
-struct AddHeaderRootContext {
-    root_headers_map: Rc<RefCell<HashMap<String, String>>>,
+struct LimitSizeRootContext {
+    root_config: config::Config,
 }
 
 #[derive(Debug)]
-struct AddHeader {
-    headers_map: Rc<RefCell<HashMap<String, String>>>,
+struct LimitSize {
+    config: config::Config,
+    is_ct: bool,
+    acc_size: usize,
 }
 
-impl AddHeaderRootContext {
+impl LimitSizeRootContext {
     fn new() -> Self {
         Self {
-            root_headers_map: Rc::new(RefCell::new(HashMap::new())),
+            root_config: config::Config::default(),
         }
     }
 }
 
-impl Context for AddHeaderRootContext {}
+impl Context for LimitSizeRootContext {}
 
-impl RootContext for AddHeaderRootContext {
+impl RootContext for LimitSizeRootContext {
     fn on_configure(&mut self, _: usize) -> bool {
-        let mut root_headers_map = self.root_headers_map.borrow_mut();
         if let Some(config_bytes) = self.get_plugin_configuration() {
-            type Config = HashMap<String, String>;
-            let v = serde_json::from_slice::<Config>(config_bytes.as_slice());
+            let v = serde_json::from_slice::<config::Config>(config_bytes.as_slice());
             match v {
                 Ok(config) => {
-                    for (key, value) in &config {
-                        root_headers_map.insert(key.to_owned(), value.to_owned());
-                    }
-
-                    info!("Got configuration: {:?}", root_headers_map);
+                    info!("Got configuration: {:?}", config);
+                    self.root_config = config;
                 }
                 Err(err) => {
                     error!("Unable to parse JSON: {:?}", err);
@@ -58,8 +56,10 @@ impl RootContext for AddHeaderRootContext {
     }
 
     fn create_http_context(&self, _context_id: u32) -> Option<Box<dyn HttpContext>> {
-        Some(Box::new(AddHeader {
-            headers_map: Rc::clone(&self.root_headers_map),
+        Some(Box::new(LimitSize {
+            config: self.root_config,
+            is_ct: false,
+            acc_size: 0,
         }))
     }
 
@@ -68,22 +68,62 @@ impl RootContext for AddHeaderRootContext {
     }
 }
 
-impl Context for AddHeader {}
+impl Context for LimitSize {}
 
-impl HttpContext for AddHeader {
-    fn on_http_response_headers(&mut self, _num_headers: usize, _end_of_stream: bool) -> Action {
-        // 默认设置两个 HTTP 返回头:
-        //  - WA-Demo: true
-        //  - X-Powered-By: add-header-ts
-        self.set_http_response_header("WA-Demo", Some("true"));
-        self.set_http_response_header("X-Powered-By", Some("add-header-rs"));
+impl HttpContext for LimitSize {
+    fn on_http_request_headers(&mut self, _num_headers: usize, _end_of_stream: bool) -> Action {
+        // 优先使用 Content-Length
+        match self.get_http_request_header("Content-Length") {
+            Some(cl) => {
+                let max_size: i64 = i64::try_from(self.max_request_size()).unwrap_or(i64::MAX);
+                match i64::from_str(cl.as_str()) {
+                    Ok(length) if length > max_size => {
+                        self.send_http_response(413, vec![], Some(b"Payload Too Large"));
+                        return Action::Pause;
+                    }
+                    _ => {}
+                }
+            }
+            _ => {}
+        }
 
-        // 设置自定义的 HTTP 返回头
-        let headers_map = self.headers_map.borrow_mut();
-        for (k, v) in headers_map.iter() {
-            self.set_http_response_header(k, Some(v));
+        match self.get_http_request_header("Transfer-Encoding") {
+            Some(te) if te == "chunked" => {
+                self.is_ct = true;
+            }
+            _ => {}
         }
 
         Action::Continue
+    }
+
+    fn on_http_request_body(&mut self, body_size: usize, _end_of_stream: bool) -> Action {
+        if self.is_ct {
+            self.acc_size += body_size;
+            if self.acc_size > self.max_request_size() {
+                self.send_http_response(413, vec![], Some(b"Payload Too Large"));
+                return Action::Pause;
+            }
+        }
+
+        Action::Continue
+    }
+
+    fn on_http_response_headers(&mut self, _num_headers: usize, _end_of_stream: bool) -> Action {
+        Action::Continue
+    }
+
+    fn on_http_response_body(&mut self, _body_size: usize, _end_of_stream: bool) -> Action {
+        Action::Continue
+    }
+}
+
+impl LimitSize {
+    fn max_request_size(&self) -> usize {
+        self.config.max_request_size
+    }
+
+    fn max_response_size(&self) -> usize {
+        self.config.max_response_size
     }
 }

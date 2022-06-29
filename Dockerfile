@@ -13,7 +13,7 @@ RUN rustup target add wasm32-unknown-unknown && \
 FROM scratch as medium
 
 ## 将编译出来的 wasm 拷贝到 /filter.wasm
-COPY --from=build /app/target/wasm32-unknown-unknown/release/add_header_rs.wasm filter.wasm
+COPY --from=build /app/target/wasm32-unknown-unknown/release/limit_size_rs.wasm filter.wasm
 COPY runtime-config.json runtime-config.json
 
 # 最终镜像, 务必使用 scratch
