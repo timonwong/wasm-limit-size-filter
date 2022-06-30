@@ -1,4 +1,4 @@
-module gitlab-ce.alauda.cn/micro-service/wasm-limit-size-rs
+module github.com/timonwong/wasm-limit-size-filter
 
 go 1.17
 

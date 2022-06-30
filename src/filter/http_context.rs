@@ -26,13 +26,6 @@ impl Context for HttpLimitSize {}
 
 impl HttpContext for HttpLimitSize {
     fn on_http_request_headers(&mut self, _num_headers: usize, _end_of_stream: bool) -> Action {
-        debug!(
-            self,
-            "on_http_request_headers, _num_headers={:?}, _end_of_stream={:?}",
-            _num_headers,
-            _end_of_stream
-        );
-
         // 优先使用 Content-Length
         if let Some(action) = self.limit_content_length(
             self.max_request_size(),
@@ -46,11 +39,6 @@ impl HttpContext for HttpLimitSize {
     }
 
     fn on_http_request_body(&mut self, body_size: usize, _end_of_stream: bool) -> Action {
-        debug!(
-            self,
-            "on_http_request_body, body_size={:?}, end_of_stream={:?}", body_size, _end_of_stream
-        );
-
         self.acc_req_size += body_size;
         if self.acc_req_size > self.max_request_size() {
             return self.bail_request_payload_too_large();
@@ -60,13 +48,6 @@ impl HttpContext for HttpLimitSize {
     }
 
     fn on_http_response_headers(&mut self, _num_headers: usize, _end_of_stream: bool) -> Action {
-        debug!(
-            self,
-            "on_http_response_headers: _num_headers={:?} _end_of_stream={:?}",
-            _num_headers,
-            _end_of_stream
-        );
-
         if self.bailed_out {
             return Action::Continue;
         }
@@ -84,11 +65,6 @@ impl HttpContext for HttpLimitSize {
     }
 
     fn on_http_response_body(&mut self, body_size: usize, _end_of_stream: bool) -> Action {
-        debug!(
-            self,
-            "on_http_response_body, body_size={:?}, end_of_stream={:?}", body_size, _end_of_stream
-        );
-
         if self.bailed_out {
             return Action::Continue;
         }
@@ -113,7 +89,6 @@ impl HttpLimitSize {
         use std::str::FromStr;
 
         let cl = header_fn(self, "Content-Length")?;
-        debug!(self, "Got content length: {:?}", cl);
         let length = i64::from_str(cl.as_str()).ok()?;
         let max_size = i64::try_from(max_size).ok()?;
         if length > max_size {

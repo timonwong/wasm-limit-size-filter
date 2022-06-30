@@ -69,13 +69,13 @@ setup:
 	curl -Lo .tools/binaryen.tar.gz \
 		"https://github.com/WebAssembly/binaryen/releases/download/$(BINARYEN_TAG)/binaryen-$(BINARYEN_TAG)-$(HOST_ARCH)-$(PLATFORM).tar.gz" \
 		&& tar -xzf .tools/binaryen.tar.gz -C .tools/binaryen --strip-component=1 && rm .tools/binaryen.tar.gz
-	@echo "Install clippy linter"
-	rustup component add clippy
+	@#echo "Install clippy linter"
+	@#rustup component add clippy
 
 
 .PHONY: release
 release: export BUILD?=release
-release: ## Build release WASM filter
+release:  ## Build release WASM filter
 	$(MAKE) build
 
 .PHONY: build
@@ -84,8 +84,8 @@ build: export BUILD?=debug
 build:  ## Build WASM filter
 	cargo build --target=$(TARGET) --release $(CARGO_EXTRA_ARGS)
 	if test "x$(BUILD)" = "xrelease"; then \
-  		wasm-snip -o $(PROJECT_PATH)/target/$(TARGET)/$(BUILD)/snipped.wasm $(PROJECT_PATH)/target/$(TARGET)/$(BUILD)/limit_size_rs.wasm && \
-  		.tools/binaryen/bin/wasm-opt -O4 --dce -o $(PROJECT_PATH)/filter.wasm $(PROJECT_PATH)/target/$(TARGET)/$(BUILD)/snipped.wasm; \
+  		wasm-snip -o $(PROJECT_PATH)/target/$(TARGET)/$(BUILD)/snipped.wasm $(PROJECT_PATH)/target/$(TARGET)/$(BUILD)/wasm_limit_size_filter.wasm && \
+  		.tools/binaryen/bin/wasm-opt -O4 --dce -o $(PROJECT_PATH)/plugin.wasm $(PROJECT_PATH)/target/$(TARGET)/$(BUILD)/snipped.wasm; \
   	fi
 
 .PHONY: e2e-test
