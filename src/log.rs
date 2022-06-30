@@ -13,7 +13,7 @@ pub enum LogLevel {
 }
 
 impl Default for LogLevel {
-    const fn default() -> Self {
+    fn default() -> Self {
         Self::Info
     }
 }
