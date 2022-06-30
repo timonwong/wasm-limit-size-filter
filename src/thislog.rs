@@ -1,5 +1,4 @@
 use serde::{Deserialize, Serialize};
-
 #[repr(u32)]
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -46,49 +45,49 @@ impl<'a> IdentLogger for &'a str {
 #[macro_export(local_inner_macros)]
 macro_rules! log {
     ($ident:expr, $lvl:expr, $($arg:tt)+) => ({
-        $crate::log::with_ident($ident, core::format_args!($($arg)+), $lvl)
+        $crate::thislog::with_ident($ident, core::format_args!($($arg)+), $lvl)
     })
 }
 
 #[macro_export(local_inner_macros)]
 macro_rules! trace {
     ($ident:expr, $($arg:tt)+) => (
-        log!($ident, crate::log::LogLevel::Trace, $($arg)+)
+        log!($ident, crate::thislog::LogLevel::Trace, $($arg)+)
     )
 }
 
 #[macro_export(local_inner_macros)]
 macro_rules! debug {
     ($ident:expr, $($arg:tt)+) => (
-        log!($ident, crate::log::LogLevel::Debug, $($arg)+)
+        log!($ident, crate::thislog::LogLevel::Debug, $($arg)+)
     )
 }
 
 #[macro_export(local_inner_macros)]
 macro_rules! info {
     ($ident:expr, $($arg:tt)+) => (
-        log!($ident, crate::log::LogLevel::Info, $($arg)+)
+        log!($ident, crate::thislog::LogLevel::Info, $($arg)+)
     )
 }
 
 #[macro_export(local_inner_macros)]
 macro_rules! warn {
     ($ident:expr, $($arg:tt)+) => (
-        log!($ident, crate::log::LogLevel::Warn, $($arg)+)
+        log!($ident, crate::thislog::LogLevel::Warn, $($arg)+)
     )
 }
 
 #[macro_export(local_inner_macros)]
 macro_rules! error {
     ($ident:expr, $($arg:tt)+) => (
-        log!($ident, crate::log::LogLevel::Error, $($arg)+)
+        log!($ident, crate::thislog::LogLevel::Error, $($arg)+)
     )
 }
 
 #[macro_export(local_inner_macros)]
 macro_rules! critical {
     ($ident:expr, $($arg:tt)+) => (
-        log!($ident, crate::log::LogLevel::Critical, $($arg)+)
+        log!($ident, crate::thislog::LogLevel::Critical, $($arg)+)
     )
 }
 

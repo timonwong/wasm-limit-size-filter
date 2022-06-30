@@ -2,7 +2,7 @@ use proxy_wasm::traits::{Context, HttpContext};
 use proxy_wasm::types::Action;
 
 use crate::config::Configuration;
-use crate::log::IdentLogger;
+use crate::thislog::IdentLogger;
 
 #[derive(Debug)]
 pub struct HttpLimitSize {

@@ -1,5 +1,5 @@
 mod config;
 #[macro_use]
-mod log;
+mod thislog;
 mod filter;
 mod util;

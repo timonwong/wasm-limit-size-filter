@@ -2,7 +2,7 @@ use proxy_wasm::traits::{Context, HttpContext, RootContext};
 use proxy_wasm::types::{BufferType, ContextType};
 
 use crate::config::Configuration;
-use crate::log::IdentLogger;
+use crate::thislog::IdentLogger;
 use crate::util::serde::ErrorLocation;
 
 use super::http_context::HttpLimitSize;
