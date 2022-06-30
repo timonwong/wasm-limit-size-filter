@@ -38,6 +38,12 @@ impl RootContext for RootLimitSize {
     fn on_vm_start(&mut self, vm_configuration_size: usize) -> bool {
         info!(
             self,
+            "{} version {} booting up.",
+            env!("CARGO_PKG_NAME"),
+            env!("CARGO_PKG_VERSION"),
+        );
+        info!(
+            self,
             "on_vm_start: vm_configuration_size is {}", vm_configuration_size
         );
 
@@ -113,7 +119,7 @@ impl RootContext for RootLimitSize {
             }
         };
 
-        self.configuration = conf.into();
+        self.configuration = conf;
         info!(
             self,
             "on_configure: plugin configuration {:#?}", self.configuration

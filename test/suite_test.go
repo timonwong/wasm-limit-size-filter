@@ -108,7 +108,7 @@ func TestLimitSize(t *testing.T) {
 				if !tt.expectPanic {
 					t.Fatal(err)
 				} else {
-					t.Error(err)
+					t.Logf("Error during executing: %s", err)
 				}
 			}
 		})

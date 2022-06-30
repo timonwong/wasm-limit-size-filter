@@ -23,7 +23,7 @@ impl Configuration {
     }
 
     const fn default_max_size() -> usize {
-        return Self::DEFAULT_MAX_SIZE;
+        Self::DEFAULT_MAX_SIZE
     }
 }
 

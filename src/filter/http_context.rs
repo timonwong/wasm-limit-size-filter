@@ -101,6 +101,7 @@ impl HttpContext for HttpLimitSize {
 }
 
 impl HttpLimitSize {
+    #[inline(always)]
     fn limit_content_length(
         &mut self,
         max_size: usize,
@@ -121,22 +122,26 @@ impl HttpLimitSize {
         None
     }
 
+    #[inline(always)]
     fn bail_request_payload_too_large(&mut self) -> Action {
         self.send_http_response(413, vec![], Some(b"Payload Too Large"));
         self.bailed_out = true;
         Action::Pause
     }
 
+    #[inline(always)]
     fn bail_response_payload_too_large(&mut self) -> Action {
         self.send_http_response(502, vec![], Some(b"Bad Gateway: Payload Too Large"));
         self.bailed_out = true;
         Action::Pause
     }
 
+    #[inline(always)]
     fn max_request_size(&self) -> usize {
         self.configuration.max_request_size
     }
 
+    #[inline(always)]
     fn max_response_size(&self) -> usize {
         self.configuration.max_response_size
     }
