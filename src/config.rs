@@ -6,47 +6,10 @@ use serde::{Deserialize, Serialize};
 #[serde(rename_all = "camelCase")]
 pub struct Configuration {
     #[serde(default = "Configuration::default_max_size")]
-    pub max_request_size: usize,
+    pub max_request_size: Option<u64>,
 
     #[serde(default = "Configuration::default_max_size")]
-    pub max_response_size: usize,
-
-    #[serde(default)]
-    pub status_codes: StatusCodes,
-}
-
-#[derive(Serialize, Deserialize, Debug, Copy, Clone)]
-#[serde(rename_all = "camelCase")]
-pub struct StatusCodes {
-    #[serde(default = "StatusCodes::default_request")]
-    pub request: u32,
-
-    #[serde(default = "StatusCodes::default_response")]
-    pub response: u32,
-}
-
-impl Default for StatusCodes {
-    fn default() -> Self {
-        Self::default()
-    }
-}
-
-impl StatusCodes {
-    #[inline]
-    pub const fn default() -> Self {
-        Self {
-            request: Self::default_request(),
-            response: Self::default_response(),
-        }
-    }
-
-    const fn default_request() -> u32 {
-        413
-    }
-
-    const fn default_response() -> u32 {
-        502
-    }
+    pub max_response_size: Option<u64>,
 }
 
 impl Default for Configuration {
@@ -56,20 +19,17 @@ impl Default for Configuration {
 }
 
 impl Configuration {
-    const DEFAULT_MAX_SIZE: usize = 500 * 1024; // 500KB
-
     #[inline]
     pub const fn default() -> Self {
         Self {
             max_request_size: Self::default_max_size(),
             max_response_size: Self::default_max_size(),
-            status_codes: StatusCodes::default(),
         }
     }
 
     #[inline]
-    const fn default_max_size() -> usize {
-        Self::DEFAULT_MAX_SIZE
+    const fn default_max_size() -> Option<u64> {
+        None
     }
 }
 
@@ -119,10 +79,7 @@ mod test {
         }"#;
 
         pub const CONFIG2: &str = r#"{
-            "maxRequestSize": 55555,
-            "statusCodes": {
-                "response": 500
-            }
+            "maxRequestSize": 55555
         }"#;
     }
 
@@ -130,17 +87,13 @@ mod test {
     fn it_parses_a_configuration_string() {
         let conf: Configuration =
             show_parsed_deserialization(fixtures::CONFIG1, serde_json::from_str);
-        assert_eq!(conf.max_request_size, 55555);
-        assert_eq!(conf.max_response_size, 666666);
-        assert_eq!(conf.status_codes.request, StatusCodes::default_request());
-        assert_eq!(conf.status_codes.response, StatusCodes::default_response());
+        assert_eq!(conf.max_request_size.unwrap(), 55555);
+        assert_eq!(conf.max_response_size.unwrap(), 666666);
 
         let conf: Configuration =
             show_parsed_deserialization(fixtures::CONFIG2, serde_json::from_str);
-        assert_eq!(conf.max_request_size, 55555);
+        assert_eq!(conf.max_request_size.unwrap(), 55555);
         assert_eq!(conf.max_response_size, Configuration::default_max_size());
-        assert_eq!(conf.status_codes.request, StatusCodes::default_request());
-        assert_eq!(conf.status_codes.response, 500);
     }
 
     #[test]

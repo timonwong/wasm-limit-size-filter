@@ -133,9 +133,8 @@ impl RootContext for RootLimitSize {
             context_id,
             log_id: format!("({}/http {}/root)", context_id, self.context_id),
             configuration: self.configuration,
-            acc_req_size: 0,
-            acc_resp_size: 0,
-            bailed_out: false,
+            acc_size: 0,
+            bailed: false,
         }))
     }
 

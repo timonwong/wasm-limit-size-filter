@@ -19,7 +19,7 @@ func init() {
 }
 
 func TestLimitSize(t *testing.T) {
-	wasmFile := filepath.Join(testDir, "../filter.wasm")
+	wasmFile := filepath.Join(testDir, "../plugin.wasm")
 
 	tests := []struct {
 		name           string
@@ -57,11 +57,6 @@ func TestLimitSize(t *testing.T) {
 			name:         "LimitResponse-1B-Fail",
 			wasmConfig:   `{"maxResponseSize": 1}`,
 			responseCode: 502,
-		},
-		{
-			name:         "LimitResponse-2B-Fail",
-			wasmConfig:   `{"maxResponseSize": 2, "statusCodes": {"response": 500}}`,
-			responseCode: 500,
 		},
 		{
 			name:         "LimitResponse-100B-Ok",

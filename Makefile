@@ -96,4 +96,4 @@ e2e-test:
 .PHONY:
 clean:
 	cargo clean
-	rm -f filter.wasm
+	rm -f plugin.wasm

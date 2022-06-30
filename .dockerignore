@@ -1,5 +1,4 @@
-ci/
 .idea/
 target/
-*.wasm
 .tools/
+*.wasm

@@ -12,7 +12,7 @@ RUN make setup && make release
 
 FROM scratch as medium
 
-COPY --from=build /app/filter.wasm plugin.wasm
+COPY --from=build /app/plugin.wasm plugin.wasm
 
 FROM scratch as final
 COPY --from=medium plugin.wasm ./
