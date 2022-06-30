@@ -1,4 +1,4 @@
-FROM rust:1.53.0-buster as build
+FROM rust:1.61.0-buster as build
 
 WORKDIR /app
 RUN cargo init --lib .
@@ -7,13 +7,13 @@ COPY Cargo.lock .
 RUN mkdir -p .cargo && cargo vendor > .cargo/config
 
 COPY ./src src
-RUN rustup target add wasm32-unknown-unknown && \
-    cargo build --target=wasm32-unknown-unknown --release
+COPY Makefile Makefile
+RUN make setup && make release
 
 FROM scratch as medium
 
 ## 将编译出来的 wasm 拷贝到 /filter.wasm
-COPY --from=build /app/target/wasm32-unknown-unknown/release/limit_size_rs.wasm filter.wasm
+COPY --from=build /app/filter.wasm filter.wasm
 COPY runtime-config.json runtime-config.json
 
 # 最终镜像, 务必使用 scratch

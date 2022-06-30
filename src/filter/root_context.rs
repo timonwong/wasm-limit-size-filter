@@ -78,8 +78,6 @@ impl RootContext for RootLimitSize {
     }
 
     fn on_configure(&mut self, plugin_configuration_size: usize) -> bool {
-        use core::convert::TryFrom;
-
         info!(
             self,
             "on_configure: plugin_configuration_size is {}", plugin_configuration_size

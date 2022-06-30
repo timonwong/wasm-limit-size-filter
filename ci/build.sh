@@ -16,4 +16,4 @@ replace-with = 'ustc'
 registry = "https://mirrors.ustc.edu.cn/crates.io-index"
 EOF
 
-make build
+make release

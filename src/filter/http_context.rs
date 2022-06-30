@@ -108,7 +108,6 @@ impl HttpLimitSize {
         header_fn: fn(&Self, &str) -> Option<String>,
         bail_fn: fn(&mut Self) -> Action,
     ) -> Option<Action> {
-        use std::convert::TryFrom;
         use std::str::FromStr;
 
         let cl = header_fn(self, "Content-Length")?;

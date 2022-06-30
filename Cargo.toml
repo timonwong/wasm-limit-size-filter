@@ -1,7 +1,7 @@
 [package]
 name = "limit-size-rs"
 version = "0.2.0"
-edition = "2018"
+edition = "2021"
 publish = false
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
@@ -15,11 +15,13 @@ thiserror = "1.0"
 
 [lib]
 crate-type = ["cdylib"]
+# rlib included to be able to use #[test] without compiler and linker issues
+#crate-type = ["cdylib", "rlib"]
 
 [profile.release]
 opt-level = 3
-lto = true
-panic = "unwind"
-codegen-units = 3
 debug = true # for wasm-snip to remove panicking infra
+lto = true
+codegen-units = 3
+panic = "unwind"
 
