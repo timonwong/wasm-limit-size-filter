@@ -1,3 +1,5 @@
+use std::convert::TryFrom;
+
 use proxy_wasm::traits::{Context, HttpContext};
 use proxy_wasm::types::Action;
 

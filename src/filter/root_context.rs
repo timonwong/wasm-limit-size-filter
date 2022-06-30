@@ -1,3 +1,5 @@
+use std::convert::TryFrom;
+
 use proxy_wasm::traits::{Context, HttpContext, RootContext};
 use proxy_wasm::types::{BufferType, ContextType};
 
