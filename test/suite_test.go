@@ -59,6 +59,11 @@ func TestLimitSize(t *testing.T) {
 			responseCode: 502,
 		},
 		{
+			name:         "LimitResponse-2B-Fail",
+			wasmConfig:   `{"maxResponseSize": 2, "statusCodes": {"response": 500}}`,
+			responseCode: 500,
+		},
+		{
 			name:         "LimitResponse-100B-Ok",
 			wasmConfig:   `{"maxResponseSize": 100}`,
 			responseCode: 200,

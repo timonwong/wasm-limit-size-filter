@@ -15,6 +15,7 @@ func init() {
 			"TestLimitSize/LimitRequest-5B-CT-Fail",
 			"TestLimitSize/LimitRequest-100B-Ok",
 			"TestLimitSize/LimitResponse-1B-Fail",
+			"TestLimitSize/LimitResponse-2B-Fail",
 			"TestLimitSize/LimitResponse-100B-Ok",
 		},
 	}
