@@ -1,26 +1,36 @@
+use core::convert::TryFrom;
+
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug, Copy, Clone)]
 #[serde(rename_all = "camelCase")]
-pub struct Config {
-    #[serde(default = "Config::default_max_size")]
+pub struct Configuration {
+    #[serde(default = "Configuration::default_max_size")]
     pub max_request_size: usize,
 
-    #[serde(default = "Config::default_max_size")]
+    #[serde(default = "Configuration::default_max_size")]
     pub max_response_size: usize,
 }
 
-impl Config {
+impl Configuration {
     const DEFAULT_MAX_SIZE: usize = 500 * 1024; // 500KB
 
-    pub fn default() -> Self {
+    pub const fn default() -> Self {
         Self {
             max_request_size: Self::default_max_size(),
             max_response_size: Self::default_max_size(),
         }
     }
 
-    fn default_max_size() -> usize {
+    const fn default_max_size() -> usize {
         return Self::DEFAULT_MAX_SIZE;
+    }
+}
+
+impl TryFrom<&[u8]> for Configuration {
+    type Error = serde_json::Error;
+
+    fn try_from(buf: &[u8]) -> Result<Self, Self::Error> {
+        serde_json::from_slice(buf)
     }
 }

@@ -27,11 +27,12 @@ func TestLimitSize(t *testing.T) {
 		requestBody    string
 		responseCode   int
 		requestChunked bool
+		expectPanic    bool
 	}{
 		{
-			name:         "WrongConfig",
-			wasmConfig:   `{"abc": 123d}`,
-			responseCode: 200,
+			name:        "WrongConfig",
+			wasmConfig:  `{"abc": 123d}`,
+			expectPanic: true,
 		},
 		{
 			name:         "LimitRequest-1B-Fail",
@@ -104,7 +105,11 @@ func TestLimitSize(t *testing.T) {
 			}
 
 			if err := scenario.Run(params); err != nil {
-				t.Fatal(err)
+				if !tt.expectPanic {
+					t.Fatal(err)
+				} else {
+					t.Error(err)
+				}
 			}
 		})
 	}
