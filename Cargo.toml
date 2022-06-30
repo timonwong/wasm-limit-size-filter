@@ -27,4 +27,3 @@ debug = true # for wasm-snip to remove panicking infra
 lto = true
 codegen-units = 3
 panic = "unwind"
-
